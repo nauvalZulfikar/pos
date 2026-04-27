@@ -1,0 +1,42 @@
+# Production stack on Aureonforge VPS — postgres + redis only.
+# API/worker/admin/pos run on host via pm2. Ports prefixed with "2" to avoid
+# collision with other tenants on the same VPS (jobflow=5432/6379, etc.).
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: desain-pos-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: desain
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?missing POSTGRES_PASSWORD}
+      POSTGRES_DB: desain_pos
+    ports:
+      - "127.0.0.1:25435:5432"
+    volumes:
+      - desain-pos-postgres:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U desain -d desain_pos"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: desain-pos-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "127.0.0.1:26381:6379"
+    volumes:
+      - desain-pos-redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  desain-pos-postgres:
+  desain-pos-redis:
