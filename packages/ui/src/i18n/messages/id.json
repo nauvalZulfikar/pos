@@ -1,0 +1,107 @@
+{
+  "common": {
+    "save": "Simpan",
+    "cancel": "Batal",
+    "confirm": "Konfirmasi",
+    "delete": "Hapus",
+    "edit": "Ubah",
+    "back": "Kembali",
+    "next": "Lanjut",
+    "loading": "Memuat...",
+    "saving": "Menyimpan...",
+    "error": "Terjadi kesalahan",
+    "retry": "Coba lagi",
+    "search": "Cari",
+    "yes": "Ya",
+    "no": "Tidak"
+  },
+  "auth": {
+    "login": "Masuk",
+    "logout": "Keluar",
+    "email": "Email",
+    "password": "Password",
+    "pin": "PIN",
+    "pinPrompt": "Masukkan PIN 4 digit",
+    "pinIncorrect": "PIN salah",
+    "pinLockedOut": "Terlalu banyak percobaan. Coba lagi dalam {minutes} menit.",
+    "selectOutlet": "Pilih cabang"
+  },
+  "pos": {
+    "newOrder": "Order Baru",
+    "addItem": "Tambah Item",
+    "qty": "Jumlah",
+    "subtotal": "Subtotal",
+    "discount": "Diskon",
+    "serviceCharge": "Service",
+    "ppn": "PPN",
+    "rounding": "Pembulatan",
+    "total": "Total",
+    "pay": "Bayar",
+    "void": "Void",
+    "voidConfirm": {
+      "title": "Void item?",
+      "body": "Item akan dihapus dari order. Aksi ini akan dicatat di audit log.",
+      "reason": "Alasan void"
+    },
+    "sendToKitchen": "Kirim ke Dapur",
+    "tableLabel": "Meja {label}",
+    "tables": "Meja",
+    "openOrders": "Order Aktif",
+    "noOpenOrders": "Tidak ada order aktif",
+    "menu": "Menu",
+    "categories": "Kategori",
+    "search": "Cari menu...",
+    "modifierRequired": "Pilih minimal {min} {name}",
+    "outOfStock": "Habis"
+  },
+  "payment": {
+    "method": "Metode Pembayaran",
+    "cash": "Tunai",
+    "qris": "QRIS",
+    "gopay": "GoPay",
+    "ovo": "OVO",
+    "dana": "DANA",
+    "shopeepay": "ShopeePay",
+    "card": "Kartu",
+    "bankTransfer": "Transfer Bank",
+    "tendered": "Diterima",
+    "change": "Kembalian",
+    "scanQr": "Pindai QR untuk membayar",
+    "qrExpiresIn": "Kode kadaluarsa dalam {seconds} detik",
+    "settled": "Pembayaran berhasil",
+    "failed": "Pembayaran gagal",
+    "pending": "Menunggu pembayaran...",
+    "refund": "Refund",
+    "splitPayment": "Bayar Terpisah"
+  },
+  "shift": {
+    "open": "Buka Shift",
+    "close": "Tutup Shift",
+    "startingCash": "Modal Awal Kas",
+    "countedCash": "Kas Aktual",
+    "expectedCash": "Kas Seharusnya",
+    "variance": "Selisih",
+    "totalSales": "Total Penjualan",
+    "totalOrders": "Jumlah Order",
+    "closeConfirm": "Tutup shift sekarang? Pastikan semua order sudah selesai."
+  },
+  "kds": {
+    "noOrders": "Belum ada order untuk dapur",
+    "newOrder": "ORDER BARU",
+    "ready": "Siap",
+    "served": "Antar"
+  },
+  "errors": {
+    "FEATURE_NOT_ENABLED": "Fitur belum aktif untuk akun ini.",
+    "PERMISSION_DENIED": "Anda tidak memiliki izin untuk aksi ini.",
+    "AUTH_REQUIRED": "Silakan login dulu.",
+    "TENANT_MISMATCH": "Data tidak ditemukan untuk akun ini.",
+    "VALIDATION_FAILED": "Data tidak valid.",
+    "RATE_LIMITED": "Terlalu banyak permintaan. Coba lagi dalam beberapa detik.",
+    "INTERNAL": "Server bermasalah. Tim sudah diberitahu.",
+    "OFFLINE_OP_REJECTED": "Op ditolak server: {detail}"
+  },
+  "data": {
+    "stillCollecting": "Data masih dikumpulkan. Skor akan tersedia pada {date}."
+  }
+}

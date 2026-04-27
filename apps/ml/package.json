@@ -1,0 +1,12 @@
+{
+  "name": "@desain/ml",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "uvicorn desain_ml.main:app --reload --port 8000",
+    "start": "uvicorn desain_ml.main:app --host 0.0.0.0 --port 8000",
+    "lint": "echo \"[ml] lint requires ruff (uv pip install -e .[dev])\" || true",
+    "typecheck": "echo \"[ml] typecheck requires mypy (uv pip install -e .[dev])\" || true",
+    "test": "echo \"[ml] tests require pytest (uv pip install -e .[dev])\" || true"
+  }
+}

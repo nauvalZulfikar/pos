@@ -1,0 +1,9 @@
+{
+  "extends": "@desain/config/tsconfig/react.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "noEmit": true,
+    "types": []
+  },
+  "include": ["src/**/*"]
+}

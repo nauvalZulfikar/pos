@@ -1,0 +1,46 @@
+{
+  "name": "desain-pos",
+  "version": "0.0.1",
+  "private": true,
+  "description": "DESAIN POS — multi-tenant SaaS POS for Indonesian F&B (1-5 outlets focus)",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.12.0",
+  "scripts": {
+    "dev": "turbo run dev --concurrency=20",
+    "build": "turbo run build",
+    "lint": "eslint \"{apps,packages}/**/src/**/*.{ts,tsx}\"",
+    "lint:fix": "eslint --fix \"{apps,packages}/**/src/**/*.{ts,tsx}\"",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:watch": "turbo run test:watch",
+    "e2e": "pnpm --filter @desain/e2e e2e",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "db:up": "docker compose -f infra/docker/docker-compose.yml up -d postgres redis",
+    "db:down": "docker compose -f infra/docker/docker-compose.yml down",
+    "db:migrate": "pnpm --filter @desain/db migrate",
+    "db:push": "pnpm --filter @desain/db push",
+    "db:reset": "pnpm --filter @desain/db reset",
+    "db:seed": "pnpm --filter @desain/db seed",
+    "db:rls": "pnpm --filter @desain/db rls:apply",
+    "db:studio": "pnpm --filter @desain/db studio",
+    "openapi:generate": "pnpm --filter @desain/api openapi:generate",
+    "adr:new": "node infra/scripts/adr-new.mjs",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\""
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.14.0",
+    "@types/node": "^22.7.0",
+    "@typescript-eslint/eslint-plugin": "^8.13.0",
+    "@typescript-eslint/parser": "^8.13.0",
+    "eslint": "^9.14.0",
+    "eslint-plugin-react": "^7.37.2",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "prettier": "^3.3.3",
+    "turbo": "^2.3.0",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.13.0"
+  }
+}

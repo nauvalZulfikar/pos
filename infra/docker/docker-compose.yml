@@ -1,0 +1,40 @@
+# Local dev stack. AGENTS.md §25.1.
+# Usage: pnpm db:up
+# Ports avoid conflicts with jobflow (5432/6379) and dropship-automation (5433/6380).
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: desain-postgres
+    environment:
+      POSTGRES_USER: desain
+      POSTGRES_PASSWORD: desain
+      POSTGRES_DB: desain_pos
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U desain -d desain_pos"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: desain-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6381:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres-data:
+  redis-data:

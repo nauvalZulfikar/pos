@@ -1,0 +1,20 @@
+{
+  "name": "@desain/e2e",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node -e \"console.log('[e2e] skipped in default test run; use: pnpm e2e (requires browsers + apps running)')\"",
+    "e2e": "playwright test",
+    "e2e:headed": "playwright test --headed",
+    "e2e:ui": "playwright test --ui",
+    "report": "playwright show-report",
+    "install:browsers": "playwright install --with-deps chromium",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.2",
+    "@types/node": "^22.7.0",
+    "typescript": "^5.6.3"
+  }
+}

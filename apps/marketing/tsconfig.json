@@ -1,0 +1,14 @@
+{
+  "extends": "@desain/config/tsconfig/next.json",
+  "include": [
+    "next-env.d.ts",
+    "src/**/*",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ],
+  "compilerOptions": {
+    "allowJs": true
+  }
+}

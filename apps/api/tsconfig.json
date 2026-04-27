@@ -1,0 +1,9 @@
+{
+  "extends": "@desain/config/tsconfig/node.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "noEmit": false
+  },
+  "include": ["src/**/*"]
+}

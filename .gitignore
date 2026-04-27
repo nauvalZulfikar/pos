@@ -1,0 +1,60 @@
+# --- env ---
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# --- node ---
+node_modules/
+.pnpm-store/
+
+# --- builds ---
+dist/
+build/
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+
+# --- testing ---
+coverage/
+.vitest-cache/
+
+# --- IDE ---
+.vscode/
+!.vscode/settings.recommended.json
+.idea/
+*.swp
+*.swo
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- logs ---
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# --- secrets ---
+*.pem
+*.key
+*-secret*
+
+# --- agent flow state ---
+tmp/
+docs/spec.md
+docs/architecture.md
+!docs/architecture/
+
+# --- python (apps/ml) ---
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- drizzle ---
+drizzle/meta/_journal.json.bak

@@ -1,0 +1,107 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "next": "Next",
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "error": "Something went wrong",
+    "retry": "Retry",
+    "search": "Search",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "auth": {
+    "login": "Sign in",
+    "logout": "Sign out",
+    "email": "Email",
+    "password": "Password",
+    "pin": "PIN",
+    "pinPrompt": "Enter your 4-digit PIN",
+    "pinIncorrect": "Incorrect PIN",
+    "pinLockedOut": "Too many attempts. Try again in {minutes} minute(s).",
+    "selectOutlet": "Select outlet"
+  },
+  "pos": {
+    "newOrder": "New Order",
+    "addItem": "Add Item",
+    "qty": "Qty",
+    "subtotal": "Subtotal",
+    "discount": "Discount",
+    "serviceCharge": "Service",
+    "ppn": "VAT",
+    "rounding": "Rounding",
+    "total": "Total",
+    "pay": "Pay",
+    "void": "Void",
+    "voidConfirm": {
+      "title": "Void item?",
+      "body": "The item will be removed from the order. This action is recorded in the audit log.",
+      "reason": "Void reason"
+    },
+    "sendToKitchen": "Send to Kitchen",
+    "tableLabel": "Table {label}",
+    "tables": "Tables",
+    "openOrders": "Open Orders",
+    "noOpenOrders": "No open orders",
+    "menu": "Menu",
+    "categories": "Categories",
+    "search": "Search menu...",
+    "modifierRequired": "Select at least {min} {name}",
+    "outOfStock": "Out of stock"
+  },
+  "payment": {
+    "method": "Payment method",
+    "cash": "Cash",
+    "qris": "QRIS",
+    "gopay": "GoPay",
+    "ovo": "OVO",
+    "dana": "DANA",
+    "shopeepay": "ShopeePay",
+    "card": "Card",
+    "bankTransfer": "Bank transfer",
+    "tendered": "Tendered",
+    "change": "Change",
+    "scanQr": "Scan QR to pay",
+    "qrExpiresIn": "Code expires in {seconds}s",
+    "settled": "Payment received",
+    "failed": "Payment failed",
+    "pending": "Waiting for payment...",
+    "refund": "Refund",
+    "splitPayment": "Split bill"
+  },
+  "shift": {
+    "open": "Open shift",
+    "close": "Close shift",
+    "startingCash": "Starting cash",
+    "countedCash": "Counted cash",
+    "expectedCash": "Expected cash",
+    "variance": "Variance",
+    "totalSales": "Total sales",
+    "totalOrders": "Order count",
+    "closeConfirm": "Close shift now? Make sure all open orders are completed first."
+  },
+  "kds": {
+    "noOrders": "No orders for kitchen",
+    "newOrder": "NEW ORDER",
+    "ready": "Ready",
+    "served": "Serve"
+  },
+  "errors": {
+    "FEATURE_NOT_ENABLED": "This feature is not enabled.",
+    "PERMISSION_DENIED": "You don't have permission to do that.",
+    "AUTH_REQUIRED": "Please sign in.",
+    "TENANT_MISMATCH": "Resource not found for this account.",
+    "VALIDATION_FAILED": "Invalid data.",
+    "RATE_LIMITED": "Too many requests. Try again in a few seconds.",
+    "INTERNAL": "Server error. Our team has been notified.",
+    "OFFLINE_OP_REJECTED": "Op rejected by server: {detail}"
+  },
+  "data": {
+    "stillCollecting": "Still collecting data. Scores will be available on {date}."
+  }
+}
