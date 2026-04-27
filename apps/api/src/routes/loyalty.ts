@@ -71,7 +71,8 @@ loyaltyRouter.post('/earn', requirePermission('payment:record'), async (c) => {
   let upgraded = false;
   if (existing) {
     const currentRank = TIER_RANK[existing.tier] ?? 0;
-    const promoted = TIER_RANK[newTier] > currentRank ? newTier : existing.tier;
+    const newRank = TIER_RANK[newTier] ?? 0;
+    const promoted = newRank > currentRank ? newTier : existing.tier;
     upgraded = promoted !== existing.tier;
     await db
       .update(schema.loyaltyAccounts)
