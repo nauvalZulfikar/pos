@@ -18,6 +18,7 @@ type Payment = {
   status: string;
   qrPayload: string | null;
   method: string;
+  amount: string;
 };
 
 export function PaymentScreen() {
@@ -30,6 +31,12 @@ export function PaymentScreen() {
     queryKey: ['order', orderId],
     queryFn: () =>
       apiFetch<{ order: Order; items: unknown[] }>(`/v1/orders/${orderId}`),
+    enabled: !!orderId,
+  });
+
+  const paymentsQ = useQuery({
+    queryKey: ['payments', 'by-order', orderId],
+    queryFn: () => apiFetch<{ items: Payment[] }>(`/v1/payments/by-order/${orderId}`),
     enabled: !!orderId,
   });
 
@@ -52,10 +59,19 @@ export function PaymentScreen() {
 
   const order = orderQ.data.order;
   const total = BigInt(order.total);
+  const settledTotal = (paymentsQ.data?.items ?? [])
+    .filter((p) => p.status === 'settled')
+    .reduce((acc, p) => acc + BigInt(p.amount), BigInt(0));
+  const remaining = total - settledTotal > BigInt(0) ? total - settledTotal : BigInt(0);
 
   if (order.status === 'paid') {
     return <PaidScreen orderId={order.id} orderNumber={order.outletOrderNumber} />;
   }
+
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ['order', orderId] });
+    qc.invalidateQueries({ queryKey: ['payments', 'by-order', orderId] });
+  };
 
   return (
     <div className="grid h-full grid-cols-[1fr_400px] gap-0">
@@ -66,19 +82,132 @@ export function PaymentScreen() {
             Total: <span className="font-mono text-lg font-semibold">{formatCurrency(total)}</span>
           </p>
         </header>
-        <p className="text-sm text-slate-600">Pilih metode pembayaran di sebelah kanan →</p>
+
+        <VoucherPanel orderId={order.id} subtotal={total} onApplied={refresh} />
+
+        {settledTotal > BigInt(0) ? (
+          <section className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm">
+            <p className="font-semibold text-emerald-900">
+              Sudah dibayar {formatCurrency(settledTotal)} dari {formatCurrency(total)}
+            </p>
+            <p className="mt-1 text-xs text-emerald-700">
+              Sisa: <strong>{formatCurrency(remaining)}</strong> · {paymentsQ.data?.items.length}{' '}
+              pembayaran tercatat (split bill).
+            </p>
+          </section>
+        ) : (
+          <p className="text-sm text-slate-600">Pilih metode pembayaran di sebelah kanan →</p>
+        )}
       </div>
 
       <aside className="overflow-y-auto border-l border-slate-200 bg-white p-4">
         <PaymentMethods
           orderId={order.id}
-          amount={total}
-          onPaid={() => {
-            qc.invalidateQueries({ queryKey: ['order', orderId] });
-          }}
+          amount={remaining > BigInt(0) ? remaining : total}
+          onPaid={refresh}
         />
       </aside>
     </div>
+  );
+}
+
+function VoucherPanel({
+  orderId,
+  subtotal,
+  onApplied,
+}: {
+  orderId: string;
+  subtotal: bigint;
+  onApplied: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [code, setCode] = useState('');
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  const m = useMutation({
+    mutationFn: async () => {
+      const r = await apiFetch<{ code: string; discountSen: string }>(
+        '/v1/vouchers/redeem',
+        {
+          method: 'POST',
+          body: JSON.stringify({ code: code.trim().toUpperCase(), orderId, orderSubtotal: subtotal.toString() }),
+        },
+      );
+      // Apply as discount on the order so total updates.
+      await apiFetch(`/v1/orders/${orderId}/discount`, {
+        method: 'POST',
+        body: JSON.stringify({
+          type: 'amount',
+          value: Number(BigInt(r.discountSen) / BigInt(100)),
+          reason: `Voucher: ${r.code}`,
+        }),
+      });
+      return r;
+    },
+    onSuccess: (r) => {
+      setFeedback(`✓ Voucher ${r.code} dipakai — diskon ${formatCurrency(BigInt(r.discountSen))}`);
+      setCode('');
+      onApplied();
+    },
+    onError: (err) => {
+      setFeedback(err instanceof ApiError ? err.message : 'Gagal validasi voucher');
+    },
+  });
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="rounded-md border border-emerald-300 bg-white px-3 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-50"
+      >
+        🎟️ Pakai Voucher
+      </button>
+    );
+  }
+
+  return (
+    <section className="rounded-xl border border-slate-200 bg-white p-4">
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold">Pakai Voucher</h3>
+        <button
+          onClick={() => {
+            setOpen(false);
+            setFeedback(null);
+          }}
+          className="text-xs text-slate-400 hover:underline"
+        >
+          Tutup
+        </button>
+      </div>
+      <div className="mt-3 flex gap-2">
+        <input
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          placeholder="Kode voucher (mis. HEMAT10)"
+          className="flex-1 rounded-md border border-slate-300 px-3 py-2 font-mono uppercase"
+        />
+        <Button
+          variant="primary"
+          size="md"
+          disabled={code.trim().length === 0 || m.isPending}
+          onClick={() => {
+            setFeedback(null);
+            m.mutate();
+          }}
+        >
+          {m.isPending ? '...' : 'Apply'}
+        </Button>
+      </div>
+      {feedback ? (
+        <p
+          className={`mt-2 text-sm ${
+            feedback.startsWith('✓') ? 'text-emerald-700' : 'text-red-600'
+          }`}
+        >
+          {feedback}
+        </p>
+      ) : null}
+    </section>
   );
 }
 
@@ -92,10 +221,44 @@ function PaymentMethods({
   onPaid: () => void;
 }) {
   const [method, setMethod] = useState<'cash' | 'qris' | 'edc' | null>(null);
+  const [splitMode, setSplitMode] = useState(false);
+  const [chargeAmount, setChargeAmount] = useState<bigint>(amount);
+
+  // Reset charge amount when remaining changes (e.g. after a partial payment).
+  useEffect(() => {
+    setChargeAmount(amount);
+  }, [amount]);
+
+  const effective = splitMode ? chargeAmount : amount;
 
   return (
     <div className="space-y-3">
-      <h2 className="mb-2 text-lg font-semibold">Metode Pembayaran</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Metode Pembayaran</h2>
+        <label className="flex items-center gap-1.5 text-xs text-slate-600">
+          <input
+            type="checkbox"
+            checked={splitMode}
+            onChange={(e) => setSplitMode(e.target.checked)}
+          />
+          Split bill
+        </label>
+      </div>
+      {splitMode ? (
+        <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs">
+          <p className="mb-2 font-medium text-amber-900">
+            Split bill: cashier slice payment per metode.
+          </p>
+          <label className="block">
+            <span className="mb-1 block text-xs">Jumlah untuk pembayaran berikut:</span>
+            <MoneyInput value={chargeAmount} onChange={setChargeAmount} />
+          </label>
+          <p className="mt-1 text-xs text-amber-800">
+            Sisa setelah ini: {formatCurrency(amount > chargeAmount ? amount - chargeAmount : BigInt(0))}
+          </p>
+        </div>
+      ) : null}
+
       {method === null ? (
         <div className="grid grid-cols-1 gap-2">
           <MethodButton label="💵 Tunai" onClick={() => setMethod('cash')} />
@@ -107,25 +270,34 @@ function PaymentMethods({
       {method === 'cash' ? (
         <CashPayment
           orderId={orderId}
-          amount={amount}
+          amount={effective}
           onCancel={() => setMethod(null)}
-          onPaid={onPaid}
+          onPaid={() => {
+            setMethod(null);
+            onPaid();
+          }}
         />
       ) : null}
       {method === 'qris' ? (
         <QrisPayment
           orderId={orderId}
-          amount={amount}
+          amount={effective}
           onCancel={() => setMethod(null)}
-          onPaid={onPaid}
+          onPaid={() => {
+            setMethod(null);
+            onPaid();
+          }}
         />
       ) : null}
       {method === 'edc' ? (
         <EdcPayment
           orderId={orderId}
-          amount={amount}
+          amount={effective}
           onCancel={() => setMethod(null)}
-          onPaid={onPaid}
+          onPaid={() => {
+            setMethod(null);
+            onPaid();
+          }}
         />
       ) : null}
     </div>

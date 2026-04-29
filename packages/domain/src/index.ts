@@ -8,6 +8,8 @@ export * as margin from './margin.js';
 export * as receipt from './receipt.js';
 export * as order from './order.js';
 export * as time from './time.js';
+export * as menuScore from './menu-score.js';
+export * as demandForecast from './demand-forecast.js';
 
 // Convenience re-exports for common helpers
 export { fromRupiah, formatIDR, sum as sumMoney } from './money.js';
@@ -37,6 +39,15 @@ export type {
 export { planRecipeDeductions } from './stock-deduction.js';
 export type { DeductionPlan, IngredientDelta, SoldLine } from './stock-deduction.js';
 export { computeMargin } from './margin.js';
+export { classify as classifyMenuPerformance, median, medianBig, rationaleFor } from './menu-score.js';
+export type { MenuCategory, MenuScoreInput } from './menu-score.js';
+export {
+  bucketize,
+  forecast as forecastDemand,
+  isHoliday2026,
+  ID_HOLIDAYS_2026,
+} from './demand-forecast.js';
+export type { Sample as DemandSample, Bucket as DemandBucket, ForecastResult } from './demand-forecast.js';
 export { renderReceiptText, textToEscPos } from './receipt.js';
 export { businessDayFor, jakartaIsoDate } from './time.js';
 export type { BusinessDay } from './time.js';

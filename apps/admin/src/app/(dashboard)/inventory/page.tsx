@@ -39,16 +39,28 @@ export default async function InventoryPage() {
           <h1 className="text-2xl font-semibold">Stok</h1>
           <p className="text-sm text-slate-500">{items.length} bahan baku</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Link
             href="/inventory/adjust"
-            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
-            ± Sesuaikan stok
+            ± Sesuaikan
+          </Link>
+          <Link
+            href="/inventory/transfer"
+            className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            ⇄ Transfer
+          </Link>
+          <Link
+            href="/inventory/waste"
+            className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            🗑️ Waste
           </Link>
           <Link
             href="/inventory/new"
-            className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+            className="rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700"
           >
             + Bahan baru
           </Link>

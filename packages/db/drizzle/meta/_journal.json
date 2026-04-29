@@ -15,6 +15,13 @@
       "when": 1777232557755,
       "tag": "0001_m1_to_m9",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777300000000,
+      "tag": "0002_demand_forecasts",
+      "breakpoints": true
     }
   ]
 }

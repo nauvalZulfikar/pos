@@ -83,6 +83,45 @@ export const anomalies = pgTable(
   }),
 );
 
+/**
+ * Demand forecast for a single (menu_item, future_day) pair. Refreshed nightly.
+ * Forecast uses seasonal-naive (same day-of-week mean) + Indonesian holiday boost.
+ */
+export const demandForecasts = pgTable(
+  'demand_forecasts',
+  {
+    ...tenantOwnedColumns,
+    outletId: uuid('outlet_id'),
+    menuItemId: uuid('menu_item_id').notNull(),
+    /** ISO date the forecast targets. */
+    targetDay: text('target_day').notNull(),
+    /** Forecasted units. */
+    expectedQty: integer('expected_qty').notNull(),
+    /** Lower 80% confidence bound. */
+    lowerQty: integer('lower_qty').notNull(),
+    /** Upper 80% confidence bound. */
+    upperQty: integer('upper_qty').notNull(),
+    /** Days of historical data used for this forecast. */
+    sampleDays: integer('sample_days').notNull(),
+    method: text('method').notNull(),
+    detail: jsonb('detail'),
+  },
+  (t) => ({
+    targetIdx: index('demand_forecasts_target_idx').on(
+      t.tenantId,
+      t.targetDay,
+      t.menuItemId,
+    ),
+    uniqIdx: uniqueIndex('demand_forecasts_uq').on(
+      t.tenantId,
+      t.outletId,
+      t.menuItemId,
+      t.targetDay,
+    ),
+  }),
+);
+
 export type DailyBrief = typeof dailyBriefs.$inferSelect;
 export type MenuPerformanceScore = typeof menuPerformanceScores.$inferSelect;
 export type Anomaly = typeof anomalies.$inferSelect;
+export type DemandForecast = typeof demandForecasts.$inferSelect;

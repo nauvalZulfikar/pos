@@ -39,5 +39,15 @@ export async function ensureSchedules(): Promise<void> {
     },
   );
 
+  // Nightly demand forecast at 19:00 UTC (= 02:00 Jakarta), after recon.
+  await queues.demandForecast.add(
+    'nightly',
+    { kind: 'nightly' },
+    {
+      repeat: { pattern: '0 19 * * *', tz: 'UTC' },
+      jobId: 'cron:demand-forecast:nightly',
+    },
+  );
+
   logger.info('schedules ensured');
 }

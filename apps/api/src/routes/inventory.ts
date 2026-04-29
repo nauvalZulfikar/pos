@@ -73,6 +73,102 @@ const AdjustStock = z.object({
   reason: z.string().min(1).max(200),
 });
 
+const TransferStock = z.object({
+  fromOutletId: z.string().uuid(),
+  toOutletId: z.string().uuid(),
+  inventoryItemId: z.string().uuid(),
+  /** Positive amount in base unit. */
+  quantity: z.coerce.number().positive(),
+  reason: z.string().min(1).max(200),
+});
+
+inventoryRouter.post('/transfer', requirePermission('inventory:adjust'), async (c) => {
+  const id = c.get('identity');
+  const input = TransferStock.parse(await c.req.json());
+  if (input.fromOutletId === input.toOutletId) {
+    throw new ProblemError(400, 'VALIDATION_FAILED', 'Outlet asal & tujuan tidak boleh sama');
+  }
+  const qtyMilli = BigInt(Math.round(input.quantity * 1000));
+
+  await db.transaction(async (tx) => {
+    const fromLevel = await tx.query.stockLevels.findFirst({
+      where: and(
+        eq(schema.stockLevels.tenantId, id.tenantId),
+        eq(schema.stockLevels.outletId, input.fromOutletId),
+        eq(schema.stockLevels.inventoryItemId, input.inventoryItemId),
+      ),
+    });
+    if (!fromLevel || fromLevel.quantityMilli < qtyMilli) {
+      throw new ProblemError(409, 'CONFLICT', 'Stok di outlet asal tidak cukup');
+    }
+
+    // Out
+    await tx.insert(schema.stockMovements).values({
+      id: uuidv7(),
+      tenantId: id.tenantId,
+      outletId: input.fromOutletId,
+      inventoryItemId: input.inventoryItemId,
+      type: 'transfer_out',
+      deltaMilli: -qtyMilli,
+      reason: input.reason,
+      reference: input.toOutletId,
+      performedBy: id.userId,
+    });
+    await tx
+      .update(schema.stockLevels)
+      .set({ quantityMilli: fromLevel.quantityMilli - qtyMilli, updatedAt: new Date() })
+      .where(
+        and(
+          eq(schema.stockLevels.tenantId, id.tenantId),
+          eq(schema.stockLevels.outletId, input.fromOutletId),
+          eq(schema.stockLevels.inventoryItemId, input.inventoryItemId),
+        ),
+      );
+
+    // In
+    await tx.insert(schema.stockMovements).values({
+      id: uuidv7(),
+      tenantId: id.tenantId,
+      outletId: input.toOutletId,
+      inventoryItemId: input.inventoryItemId,
+      type: 'transfer_in',
+      deltaMilli: qtyMilli,
+      reason: input.reason,
+      reference: input.fromOutletId,
+      performedBy: id.userId,
+    });
+    const toLevel = await tx.query.stockLevels.findFirst({
+      where: and(
+        eq(schema.stockLevels.tenantId, id.tenantId),
+        eq(schema.stockLevels.outletId, input.toOutletId),
+        eq(schema.stockLevels.inventoryItemId, input.inventoryItemId),
+      ),
+    });
+    if (toLevel) {
+      await tx
+        .update(schema.stockLevels)
+        .set({ quantityMilli: toLevel.quantityMilli + qtyMilli, updatedAt: new Date() })
+        .where(
+          and(
+            eq(schema.stockLevels.tenantId, id.tenantId),
+            eq(schema.stockLevels.outletId, input.toOutletId),
+            eq(schema.stockLevels.inventoryItemId, input.inventoryItemId),
+          ),
+        );
+    } else {
+      await tx.insert(schema.stockLevels).values({
+        tenantId: id.tenantId,
+        outletId: input.toOutletId,
+        inventoryItemId: input.inventoryItemId,
+        quantityMilli: qtyMilli,
+        reorderThresholdMilli: null,
+      });
+    }
+  });
+
+  return c.json({ ok: true });
+});
+
 inventoryRouter.post('/adjust', requirePermission('inventory:adjust'), async (c) => {
   const id = c.get('identity');
   const input = AdjustStock.parse(await c.req.json());

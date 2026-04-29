@@ -10,6 +10,8 @@ const NAV = [
   { href: '/reports', label: 'Laporan', section: 'main' },
   { href: '/delivery', label: 'Delivery', section: 'main' },
   { href: '/ai', label: 'AI Brief', section: 'main' },
+  { href: '/reports/menu-scoring', label: '⭐ Menu Scoring', section: 'main' },
+  { href: '/reports/demand-forecast', label: '📈 Demand Forecast', section: 'main' },
   { href: '/outlets', label: 'Cabang', section: 'admin' },
   { href: '/staff', label: 'Tim', section: 'admin' },
   { href: '/vouchers', label: 'Voucher', section: 'admin' },

@@ -7,6 +7,7 @@ import { authRequired } from '../middleware/auth.js';
 import { tenantContext } from '../middleware/tenant-context.js';
 import { requirePermission } from '../middleware/permission.js';
 import { requireAnyFeatures } from '../middleware/entitlement.js';
+import { enqueueDeliverySync } from '../queues.js';
 import type { RequestVars } from '../context.js';
 
 export const deliveryRouter = new Hono<{ Variables: RequestVars }>();
@@ -60,12 +61,11 @@ deliveryRouter.post('/links', requirePermission('settings:edit'), async (c) => {
 
 deliveryRouter.post('/sync-menu', requirePermission('menu:edit'), async (c) => {
   const id = c.get('identity');
-  // TODO: enqueue delivery.outbound job per platform per outlet via BullMQ
-  // For now mark all links as syncing
   await db
     .update(schema.deliveryPlatformLinks)
     .set({ syncStatus: 'queued', updatedAt: new Date() })
     .where(eq(schema.deliveryPlatformLinks.tenantId, id.tenantId));
+  await enqueueDeliverySync(id.tenantId);
   return c.json({ ok: true, message: 'Menu sync queued for all linked platforms' });
 });
 

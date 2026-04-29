@@ -7,6 +7,9 @@ import { startWhatsappWorker } from './workers/whatsapp.js';
 import { startRecipeDeductWorker } from './workers/recipe-deduct.js';
 import { startStockAlertsWorker } from './workers/stock-alerts.js';
 import { startAnomalyWorker } from './workers/anomaly.js';
+import { startMenuScoreWorker } from './workers/menu-score.js';
+import { startDemandForecastWorker } from './workers/demand-forecast.js';
+import { startDeliveryOutboundWorker } from './workers/delivery-outbound.js';
 
 async function bootstrap() {
   const workers = [
@@ -17,6 +20,9 @@ async function bootstrap() {
     startRecipeDeductWorker(),
     startStockAlertsWorker(),
     startAnomalyWorker(),
+    startMenuScoreWorker(),
+    startDemandForecastWorker(),
+    startDeliveryOutboundWorker(),
   ];
 
   await ensureSchedules();

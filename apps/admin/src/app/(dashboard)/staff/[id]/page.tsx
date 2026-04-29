@@ -1,9 +1,16 @@
 import Link from 'next/link';
 import { apiFetch } from '@/lib/api';
 import { deactivateStaff, setPin } from '../actions';
+import { OutletPermissionEditor } from './outlet-permission-editor';
 
+type Outlet = { id: string; name: string; code: string };
 type StaffEntry = {
-  membership: { id: string; role: string; isActive: boolean };
+  membership: {
+    id: string;
+    role: string;
+    isActive: boolean;
+    outletPermissions: Array<{ outletId: string; permissions: string[] }>;
+  };
   user: {
     id: string;
     email: string;
@@ -19,9 +26,14 @@ export const dynamic = 'force-dynamic';
 export default async function StaffDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   let entry: StaffEntry | undefined;
+  let outlets: Outlet[] = [];
   try {
-    const r = await apiFetch<{ items: StaffEntry[] }>('/v1/staff');
+    const [r, o] = await Promise.all([
+      apiFetch<{ items: StaffEntry[] }>('/v1/staff'),
+      apiFetch<{ items: Outlet[] }>('/v1/outlets'),
+    ]);
     entry = r.items.find((e) => e.user?.id === id);
+    outlets = o.items;
   } catch {
     /* fall */
   }
@@ -40,7 +52,7 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
   const deactivate = deactivateStaff.bind(null, entry.user.id);
 
   return (
-    <div className="mx-auto max-w-md space-y-6">
+    <div className="mx-auto max-w-2xl space-y-6">
       <header>
         <Link href="/staff" className="text-sm text-emerald-700 hover:underline">
           ← Tim
@@ -70,6 +82,18 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
             Set PIN
           </button>
         </form>
+      </section>
+
+      <section className="rounded-xl border border-slate-200 bg-white p-6">
+        <h2 className="mb-3 font-semibold">Permission per Cabang</h2>
+        <p className="mb-3 text-xs text-slate-500">
+          Override izin per cabang. Default mengikuti role <code>{entry.membership.role}</code>.
+        </p>
+        <OutletPermissionEditor
+          userId={entry.user.id}
+          outlets={outlets}
+          initial={entry.membership.outletPermissions ?? []}
+        />
       </section>
 
       <section className="rounded-xl border border-red-200 bg-red-50 p-6">

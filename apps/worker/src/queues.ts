@@ -18,6 +18,8 @@ export const QueueName = {
   recipeDeduct: 'recipe.deduct',
   stockAlerts: 'stock.alerts',
   peakHour: 'analytics.peak_hour',
+  demandForecast: 'analytics.demand_forecast',
+  deliverySync: 'delivery.outbound.sync',
 } as const;
 
 export const queues = {
@@ -33,6 +35,8 @@ export const queues = {
   recipeDeduct: new Queue(QueueName.recipeDeduct, { connection }),
   stockAlerts: new Queue(QueueName.stockAlerts, { connection }),
   peakHour: new Queue(QueueName.peakHour, { connection }),
+  demandForecast: new Queue(QueueName.demandForecast, { connection }),
+  deliverySync: new Queue(QueueName.deliverySync, { connection }),
 } as const;
 
 export type QueueId = keyof typeof queues;

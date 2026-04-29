@@ -6,7 +6,7 @@
  * (separate KYB process); this endpoint produces the XML payload.
  */
 
-import { and, db, eq, schema } from '@desain/db';
+import { and, db, eq, gte, isNotNull, lte, schema } from '@desain/db';
 import { ProblemError } from '@desain/types';
 import { Hono } from 'hono';
 import { authRequired } from '../middleware/auth.js';
@@ -98,3 +98,81 @@ ${items
     },
   });
 });
+
+/**
+ * Bulk e-Faktur CSV — DJP-friendly format for batch upload via the desktop app.
+ * Filters: paid orders only, with NPWP customers, in the [from, to] business-day range.
+ */
+efakturRouter.get('/export.csv', requirePermission('reports:export'), async (c) => {
+  const id = c.get('identity');
+  const from = c.req.query('from');
+  const to = c.req.query('to');
+  if (!from || !to) {
+    throw new ProblemError(400, 'VALIDATION_FAILED', 'from & to (YYYY-MM-DD) wajib');
+  }
+
+  const orders = await db.query.orders.findMany({
+    where: and(
+      eq(schema.orders.tenantId, id.tenantId),
+      eq(schema.orders.status, 'paid'),
+      gte(schema.orders.businessDay, from),
+      lte(schema.orders.businessDay, to),
+      isNotNull(schema.orders.customerPhone),
+    ),
+    limit: 5000,
+  });
+
+  const tenant = await db.query.tenants.findFirst({
+    where: eq(schema.tenants.id, id.tenantId),
+  });
+  if (!tenant?.isPkp) {
+    throw new ProblemError(400, 'VALIDATION_FAILED', 'Tenant bukan PKP');
+  }
+
+  // CSV header per DJP e-Faktur "FK" record layout (subset).
+  const header = [
+    'FK',
+    'KD_JENIS_TRANSAKSI',
+    'FG_PENGGANTI',
+    'NOMOR_FAKTUR',
+    'MASA_PAJAK',
+    'TAHUN_PAJAK',
+    'TANGGAL_FAKTUR',
+    'NPWP_LAWAN',
+    'NAMA_LAWAN',
+    'JUMLAH_DPP',
+    'JUMLAH_PPN',
+    'REFERENSI',
+  ];
+  const rows = orders.map((o) => {
+    const paidAt = o.paidAt ? new Date(o.paidAt) : new Date();
+    const dpp = o.subtotal - o.discountTotal + o.serviceCharge;
+    return [
+      'FK',
+      '01',
+      '0',
+      `AUTO-${o.outletOrderNumber}`,
+      String(paidAt.getMonth() + 1),
+      String(paidAt.getFullYear()),
+      paidAt.toISOString().slice(0, 10),
+      o.customerPhone ?? '',
+      csvEscape(o.customerName ?? 'Konsumen Akhir'),
+      dpp.toString(),
+      o.ppnTotal.toString(),
+      o.id,
+    ].join(',');
+  });
+  const csv = [header.join(','), ...rows].join('\n');
+
+  return new Response(csv, {
+    headers: {
+      'content-type': 'text/csv; charset=utf-8',
+      'content-disposition': `attachment; filename="efaktur-${from}_${to}.csv"`,
+    },
+  });
+});
+
+function csvEscape(s: string): string {
+  if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}

@@ -10,9 +10,15 @@ const QueueNames = {
   recipeDeduct: 'recipe.deduct',
   notificationsWhatsapp: 'notifications.whatsapp',
   deliveryInbound: 'delivery.inbound',
+  deliverySync: 'delivery.outbound.sync',
+  aiMenuScore: 'ai.menu_score',
+  demandForecast: 'analytics.demand_forecast',
 } as const;
 
 const recipeDeductQueue = new Queue(QueueNames.recipeDeduct, { connection: redis });
+const deliverySyncQueue = new Queue(QueueNames.deliverySync, { connection: redis });
+const menuScoreQueue = new Queue(QueueNames.aiMenuScore, { connection: redis });
+const demandForecastQueue = new Queue(QueueNames.demandForecast, { connection: redis });
 
 export type RecipeDeductJob = {
   tenantId: string;
@@ -30,4 +36,41 @@ export async function enqueueRecipeDeduct(data: RecipeDeductJob): Promise<void> 
     attempts: 3,
     backoff: { type: 'exponential', delay: 5000 },
   });
+}
+
+export async function enqueueDeliverySync(tenantId: string, linkId?: string): Promise<void> {
+  await deliverySyncQueue.add(
+    'sync',
+    { tenantId, linkId },
+    {
+      jobId: `delivery-sync:${tenantId}:${linkId ?? 'all'}:${Date.now()}`,
+      removeOnComplete: 50,
+      removeOnFail: 50,
+      attempts: 2,
+    },
+  );
+}
+
+export async function enqueueMenuScore(tenantId: string): Promise<void> {
+  await menuScoreQueue.add(
+    'tenant',
+    { kind: 'tenant', tenantId },
+    {
+      jobId: `menu-score:${tenantId}:${Date.now()}`,
+      removeOnComplete: 20,
+      removeOnFail: 20,
+    },
+  );
+}
+
+export async function enqueueDemandForecast(tenantId: string): Promise<void> {
+  await demandForecastQueue.add(
+    'tenant',
+    { kind: 'tenant', tenantId },
+    {
+      jobId: `demand-forecast:${tenantId}:${Date.now()}`,
+      removeOnComplete: 20,
+      removeOnFail: 20,
+    },
+  );
 }

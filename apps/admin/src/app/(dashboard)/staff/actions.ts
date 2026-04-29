@@ -56,3 +56,16 @@ export async function deactivateStaff(userId: string): Promise<void> {
   revalidatePath('/staff');
   redirect('/staff');
 }
+
+type OutletOverride = { outletId: string; permissions: string[] };
+
+export async function setOutletPermissions(
+  userId: string,
+  overrides: OutletOverride[],
+): Promise<void> {
+  await apiFetch(`/v1/staff/${userId}`, {
+    method: 'PATCH',
+    body: { outletPermissions: overrides },
+  });
+  revalidatePath(`/staff/${userId}`);
+}

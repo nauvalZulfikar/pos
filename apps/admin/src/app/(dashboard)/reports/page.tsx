@@ -50,17 +50,49 @@ export default async function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-center justify-between">
+      <header className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-2xl font-semibold">Laporan</h1>
           <p className="text-sm text-slate-500">7 hari terakhir · Asia/Jakarta</p>
         </div>
-        <a
-          href="/reports/peak-hours"
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-        >
-          📊 Peak Hours →
-        </a>
+        <div className="flex flex-wrap gap-2">
+          <a
+            href="/reports/peak-hours"
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            📊 Peak Hours
+          </a>
+          <a
+            href="/reports/menu-scoring"
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            ⭐ Menu Scoring
+          </a>
+          <a
+            href="/reports/demand-forecast"
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            📈 Demand Forecast
+          </a>
+          <a
+            href="/reports/menu-margin"
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            💰 Komisi vs Margin
+          </a>
+          <a
+            href="/reports/delivery-analytics"
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            🛵 Delivery Analytics
+          </a>
+          <a
+            href="/reports/efaktur"
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            🧾 e-Faktur CSV
+          </a>
+        </div>
       </header>
 
       {error ? (

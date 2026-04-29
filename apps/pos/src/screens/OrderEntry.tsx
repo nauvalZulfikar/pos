@@ -30,6 +30,7 @@ export function OrderEntryScreen() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [showDiscount, setShowDiscount] = useState(false);
   const [voidLine, setVoidLine] = useState<string | null>(null);
+  const [showHolds, setShowHolds] = useState(false);
 
   const categoriesQ = useQuery({
     queryKey: ['menu', 'categories', tenantId],
@@ -288,6 +289,24 @@ export function OrderEntryScreen() {
             >
               Kirim Dapur
             </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={draft.lines.length === 0}
+              onClick={() => {
+                const label = window.prompt('Nama untuk hold (opsional):') ?? '';
+                draft.hold(label);
+              }}
+            >
+              ⏸ Hold
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowHolds(true)}
+            >
+              📋 Holds ({draft.holds.length})
+            </Button>
           </div>
 
           <Button
@@ -312,6 +331,83 @@ export function OrderEntryScreen() {
 
       {showDiscount ? <DiscountModal onClose={() => setShowDiscount(false)} /> : null}
       {voidLine ? <VoidModal lineId={voidLine} onClose={() => setVoidLine(null)} /> : null}
+      {showHolds ? <HoldsModal onClose={() => setShowHolds(false)} /> : null}
+    </div>
+  );
+}
+
+function HoldsModal({ onClose }: { onClose: () => void }) {
+  const draft = useOrderDraftStore();
+  return (
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-2xl bg-white p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="text-lg font-semibold">Order yang di-hold</h2>
+        <p className="mb-4 mt-1 text-sm text-slate-500">
+          Resume untuk lanjutkan, atau hapus jika sudah tidak relevan.
+        </p>
+        {draft.holds.length === 0 ? (
+          <p className="rounded-md bg-slate-50 p-3 text-sm text-slate-500">
+            Belum ada order yang di-hold. Tekan tombol Hold di kanan bawah.
+          </p>
+        ) : (
+          <ul className="max-h-80 space-y-2 overflow-auto">
+            {draft.holds.map((h) => {
+              const total = h.lines.reduce(
+                (acc, l) => acc + BigInt(l.unitPrice) * BigInt(l.quantity),
+                BigInt(0),
+              );
+              return (
+                <li
+                  key={h.id}
+                  className="flex items-start justify-between rounded-md border border-slate-200 p-3"
+                >
+                  <div>
+                    <p className="font-medium">{h.label}</p>
+                    <p className="text-xs text-slate-500">
+                      {h.lines.length} item · {formatCurrency(total)} ·{' '}
+                      {new Date(h.heldAt).toLocaleTimeString('id-ID')}
+                    </p>
+                  </div>
+                  <div className="flex gap-1">
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      onClick={() => {
+                        if (draft.lines.length > 0) {
+                          if (!confirm('Cart aktif masih ada item — di-hold dulu?')) return;
+                          draft.hold('Auto-hold');
+                        }
+                        draft.resume(h.id);
+                        onClose();
+                      }}
+                    >
+                      Resume
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        if (confirm('Hapus hold ini?')) draft.removeHold(h.id);
+                      }}
+                    >
+                      Hapus
+                    </Button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <Button variant="secondary" size="md" className="mt-4 w-full" onClick={onClose}>
+          Tutup
+        </Button>
+      </div>
     </div>
   );
 }

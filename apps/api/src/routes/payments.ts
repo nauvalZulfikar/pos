@@ -1,4 +1,4 @@
-import { eq, and, db, schema } from '@desain/db';
+import { eq, and, db, schema, sql } from '@desain/db';
 import { payment as paymentInt } from '@desain/integrations';
 import { ProblemError } from '@desain/types';
 import { Hono } from 'hono';
@@ -16,6 +16,41 @@ import type { RequestVars } from '../context.js';
 export const paymentRouter = new Hono<{ Variables: RequestVars }>();
 
 paymentRouter.use('*', authRequired, tenantContext);
+
+/**
+ * Returns true (and marks the order paid) only if the sum of settled payments
+ * for this order is >= the order total. Supports split-bill: multiple partial
+ * payments converge to a paid order without mutating intermediate states.
+ */
+async function markPaidIfCovered(
+  tenantId: string,
+  orderId: string,
+): Promise<{ paid: boolean; remaining: bigint }> {
+  const order = await db.query.orders.findFirst({
+    where: and(eq(schema.orders.id, orderId), eq(schema.orders.tenantId, tenantId)),
+  });
+  if (!order) return { paid: false, remaining: BigInt(0) };
+  const settled = await db
+    .select({ s: sql<string>`coalesce(sum(${schema.payments.amount}), 0)::text` })
+    .from(schema.payments)
+    .where(
+      and(
+        eq(schema.payments.tenantId, tenantId),
+        eq(schema.payments.orderId, orderId),
+        eq(schema.payments.status, 'settled'),
+      ),
+    );
+  const sum = BigInt(settled[0]?.s ?? '0');
+  const remaining = order.total - sum;
+  if (sum >= order.total && order.status !== 'paid') {
+    await db
+      .update(schema.orders)
+      .set({ status: 'paid', paidAt: new Date() })
+      .where(eq(schema.orders.id, orderId));
+    return { paid: true, remaining: BigInt(0) };
+  }
+  return { paid: order.status === 'paid', remaining };
+}
 
 const RecordCashInput = z.object({
   orderId: z.string().uuid(),
@@ -39,35 +74,39 @@ paymentRouter.post(
     const change =
       input.tendered && input.tendered > input.amount ? input.tendered - input.amount : BigInt(0);
     const paymentId = uuidv7();
-    await db.transaction(async (tx) => {
-      await tx.insert(schema.payments).values({
-        id: paymentId,
-        tenantId: id.tenantId,
-        orderId: order.id,
-        outletId: order.outletId,
-        method: 'cash',
-        provider: 'manual',
-        amount: input.amount,
-        changeReturned: change,
-        status: 'settled',
-        receivedAt: new Date(),
-        settledAt: new Date(),
-        recordedBy: id.userId,
-        notes: input.notes ?? null,
-      });
-      await tx
-        .update(schema.orders)
-        .set({ status: 'paid', paidAt: new Date() })
-        .where(eq(schema.orders.id, order.id));
-    });
-    const created = await db.query.payments.findFirst({ where: eq(schema.payments.id, paymentId) });
-    await enqueueRecipeDeduct({
+    await db.insert(schema.payments).values({
+      id: paymentId,
       tenantId: id.tenantId,
-      outletId: order.outletId,
       orderId: order.id,
-      performedBy: id.userId,
+      outletId: order.outletId,
+      method: 'cash',
+      provider: 'manual',
+      amount: input.amount,
+      changeReturned: change,
+      status: 'settled',
+      receivedAt: new Date(),
+      settledAt: new Date(),
+      recordedBy: id.userId,
+      notes: input.notes ?? null,
     });
-    return c.json({ payment: created }, 201);
+    const status = await markPaidIfCovered(id.tenantId, order.id);
+    const created = await db.query.payments.findFirst({ where: eq(schema.payments.id, paymentId) });
+    if (status.paid) {
+      await enqueueRecipeDeduct({
+        tenantId: id.tenantId,
+        outletId: order.outletId,
+        orderId: order.id,
+        performedBy: id.userId,
+      });
+    }
+    return c.json(
+      {
+        payment: created,
+        orderPaid: status.paid,
+        remainingDue: status.remaining.toString(),
+      },
+      201,
+    );
   },
 );
 
@@ -185,23 +224,20 @@ paymentRouter.post('/qris/mock-settle', requirePermission('payment:record'), asy
   if (payment.provider !== 'manual') {
     throw new ProblemError(409, 'CONFLICT', 'Mock settle hanya untuk dev mode (no Midtrans creds)');
   }
-  await db.transaction(async (tx) => {
-    await tx
-      .update(schema.payments)
-      .set({ status: 'settled', settledAt: new Date(), receivedAt: new Date() })
-      .where(eq(schema.payments.id, payment.id));
-    await tx
-      .update(schema.orders)
-      .set({ status: 'paid', paidAt: new Date() })
-      .where(eq(schema.orders.id, payment.orderId));
-  });
-  await enqueueRecipeDeduct({
-    tenantId: id.tenantId,
-    outletId: payment.outletId,
-    orderId: payment.orderId,
-    performedBy: id.userId,
-  });
-  return c.json({ ok: true });
+  await db
+    .update(schema.payments)
+    .set({ status: 'settled', settledAt: new Date(), receivedAt: new Date() })
+    .where(eq(schema.payments.id, payment.id));
+  const status = await markPaidIfCovered(id.tenantId, payment.orderId);
+  if (status.paid) {
+    await enqueueRecipeDeduct({
+      tenantId: id.tenantId,
+      outletId: payment.outletId,
+      orderId: payment.orderId,
+      performedBy: id.userId,
+    });
+  }
+  return c.json({ ok: true, orderPaid: status.paid, remainingDue: status.remaining.toString() });
 });
 
 const RecordCardInput = z.object({
@@ -220,33 +256,33 @@ paymentRouter.post('/card-edc', requirePermission('payment:record'), idempotency
   if (!order) throw new ProblemError(404, 'NOT_FOUND', 'Order not found');
 
   const paymentId = uuidv7();
-  await db.transaction(async (tx) => {
-    await tx.insert(schema.payments).values({
-      id: paymentId,
-      tenantId: id.tenantId,
-      orderId: order.id,
-      outletId: order.outletId,
-      method: 'card_edc',
-      provider: 'manual',
-      amount: input.amount,
-      status: 'settled',
-      receivedAt: new Date(),
-      settledAt: new Date(),
-      recordedBy: id.userId,
-      notes: input.cardLast4 ? `EDC ****${input.cardLast4}` : input.notes ?? null,
-    });
-    await tx
-      .update(schema.orders)
-      .set({ status: 'paid', paidAt: new Date() })
-      .where(eq(schema.orders.id, order.id));
-  });
-  await enqueueRecipeDeduct({
+  await db.insert(schema.payments).values({
+    id: paymentId,
     tenantId: id.tenantId,
-    outletId: order.outletId,
     orderId: order.id,
-    performedBy: id.userId,
+    outletId: order.outletId,
+    method: 'card_edc',
+    provider: 'manual',
+    amount: input.amount,
+    status: 'settled',
+    receivedAt: new Date(),
+    settledAt: new Date(),
+    recordedBy: id.userId,
+    notes: input.cardLast4 ? `EDC ****${input.cardLast4}` : input.notes ?? null,
   });
-  return c.json({ ok: true, paymentId }, 201);
+  const status = await markPaidIfCovered(id.tenantId, order.id);
+  if (status.paid) {
+    await enqueueRecipeDeduct({
+      tenantId: id.tenantId,
+      outletId: order.outletId,
+      orderId: order.id,
+      performedBy: id.userId,
+    });
+  }
+  return c.json(
+    { ok: true, paymentId, orderPaid: status.paid, remainingDue: status.remaining.toString() },
+    201,
+  );
 });
 
 const RefundInput = z.object({
